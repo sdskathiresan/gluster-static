@@ -1,0 +1,138 @@
+Step1: Configure DNS:<internal ip's of k8s and node name of k8s>
+------------------------------------------------------------------
+
+sudo vi /etc/hosts
+
+192.168.12.16  gluster1.itzgeek.local  gluster1
+192.168.12.17  gluster2.itzgeek.local  gluster2
+192.168.12.20 client.itzgeek.local client
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+Step2: Install centos-release-gluster package
+-------------------------------------------------------------------
+
+yum install -y centos-release-gluster
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Step3: Install GlusterFS:
+--------------------------------------------------------------------
+
+yum install -y glusterfs-server
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+step4: start the service:
+--------------------------------------------------------------------
+systemctl start glusterd
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+step5: check the status if the service is running:
+
+glusterd.service - GlusterFS, a clustered file-system server
+   Loaded: loaded (/usr/lib/systemd/system/glusterd.service; disabled; vendor preset: disabled)
+   Active: active (running) since Tue 2016-09-27 16:00:19 EDT; 1s ago
+  Process: 4072 ExecStart=/usr/sbin/glusterd -p /var/run/glusterd.pid --log-level $LOG_LEVEL $GLUSTERD_OPTIONS (code=exited, 
+
+status=0/SUCCESS)
+ Main PID: 4073 (glusterd)
+   CGroup: /system.slice/glusterd.service
+           └─4073 /usr/sbin/glusterd -p /var/run/glusterd.pid --log-level INFO
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+step6: enable glusterd
+
+systemctl enable glusterd
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Step7: Add storage
+
+fdisk /dev/sdb
+
+create partition in the sdb disk and save it in partition table( or keep sdb as single partition)
+   1)  fdisk /dev/sdb
+   2) type 'n' for new partition
+   3) type 'p' for primary partition
+   4) give enter for all the option
+   5) type 'p' for printing the partitions
+   6) type 'w' for saving the changes into partition table
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+filesystem add:
+
+mkfs.ext4 /dev/sdb1  --> depending on the partition you want to add filesystem
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+mount:
+
+mkdir -p /data/gluster
+mount /dev/sdb1 /data/gluster
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+to persis partition data upon reboot"
+
+echo "/dev/sdb1 /data/gluster ext4 defaults 0 0" | tee --append /etc/fstab
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+check the peer status:
+
+gluster peer probe <other server hostname>
+
+peer probe: success.
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+to list peer status:
+
+gluster peer status
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+gluster pool list
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Setup GlusterFS Volume:
+Create a brick (directory) called “gv0” in the mounted file system on three nodes.
+
+mkdir -p /data/gluster/gv0
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+[root@gluster1 ~]# gluster volume create gv0 replica 2 gluster1.itzgeek.local:/data/gluster/gv0 
+
+gluster2.itzgeek.local:/data/gluster/gv0
+volume create: gv0: success: please start the volume to access data
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+[root@gluster1 ~]# gluster volume start gv0
+volume start: gv0: success
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+[root@gluster1 ~]# gluster volume info gv0
+
+Volume Name: gv0
+Type: Replicate
+Volume ID: c3968489-098d-4664-8b25-54827f244fbe
+Status: Started
+Snapshot Count: 0
+Number of Bricks: 1 x 2 = 2
+Transport-type: tcp
+Bricks:
+Brick1: gluster1.itzgeek.local:/data/gluster/gv0
+Brick2: gluster2.itzgeek.local:/data/gluster/gv0
+Options Reconfigured:
+transport.address-family: inet
+performance.readdir-ahead: on
+nfs.disable: on
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
