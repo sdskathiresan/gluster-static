@@ -1,0 +1,10 @@
+kind: Endpoints
+apiVersion: v1
+metadata:
+  name: "glusterfs-endpoints"
+  namespace: "default"
+subsets:
+  - addresses:
+      - ip: 10.92.44.132
+    ports:
+      - port: 1

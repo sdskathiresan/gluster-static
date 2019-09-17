@@ -1,0 +1,8 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: "glusterfs-endpoints"
+  namespace: "default"
+spec:
+  ports:
+    - port: 1
